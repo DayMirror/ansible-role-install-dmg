@@ -1,0 +1,33 @@
+---
+- name: "Checking if {{ app_name }} is installed"
+  stat:
+    path: /Applications/{{ app_name }}.app
+  register: app_folder
+  
+- name: "Downloading {{ app_name }} from {{ app_dmg_url }}"
+  get_url:
+    url: "{{ app_url }}"
+    dest: "./{{app_name}}.dmg"
+  when: not app_folder.stat.exists
+
+- name: "Mounting {{ app_name }} dmg file"
+  command: "hdiutil attach ./{{ app_name }}.dmg -nobrowse -mountpoint ./{{ app_name }}"
+  when: not app_folder.stat.exists
+
+- name: "Copying {{ app_name }} to Applications folder"
+  copy:
+    src: "./{{ app_name }}/*.app"
+    dest: /Applications
+    mode: 755
+  when: not app_folder.stat.exists
+
+- name: "Unmounting {{ app_name }} dmg file"
+  command: "hdiutil detach ./{{app_name }}"
+  when: not app_folder.stat.exists
+
+- name: "Removing {{ app_name }} dmg file"
+  file:
+    path: "./{{ app_name }}.dmg"
+    state: absent
+  when: not app_folder.stat.exists
+...
